@@ -1,46 +1,54 @@
-# AI Subtitle Generator (local UI)
+# AI Subtitle Generator — frontend
 
-A Streamlit UI around a Whisper (transcription) → Google Translate (translation) → `.srt`
-pipeline. Everything runs on your machine except the translation step, which calls Google
-Translate and needs an internet connection (turn it off in the sidebar to stay fully offline).
+A Streamlit UI that streams a video to a separate backend service for
+transcription/translation, then polls for and displays the result. See
+`BACKEND_API_CONTRACT.md` for exactly what this frontend expects your backend
+to expose — that file is a placeholder pending your real backend's routes.
 
-## 1. Prerequisites
-
-- Python 3.9–3.12
-- **ffmpeg** installed and on your PATH (used by both `moviepy` and Whisper)
-  - macOS: `brew install ffmpeg`
-  - Windows: `winget install ffmpeg` (or download from ffmpeg.org and add to PATH)
-  - Linux: `sudo apt install ffmpeg`
-
-## 2. Install
+## Install
 
 ```bash
-python3 -m venv srt-venv
-source srt-venv/bin/activate        # Windows: srt-venv\Scripts\activate
+cd frontend
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Configure the backend URL
 
-> If you have an NVIDIA GPU and want faster transcription, install the CUDA build of
-> `torch` first (see https://pytorch.org/get-started/locally/) before installing the
-> rest of the requirements — otherwise the CPU build is used automatically.
+The sidebar has a **Backend URL** field. It defaults to the `BACKEND_URL`
+environment variable, or `http://localhost:8000` if that's not set.
 
-## 3. Run
+- **Local testing** (both on one machine): leave it as `http://localhost:8000`
+  (or wherever your backend listens) and just run it.
+- **Production** (separate machines): either export `BACKEND_URL` before
+  launching, or type the backend's address straight into the sidebar field —
+  no code change needed either way.
 
 ```bash
-streamlit run ui_app.py
+# local testing
+streamlit run app.py
+
+# pointing at a remote backend
+BACKEND_URL=https://your-backend.example.com streamlit run app.py
 ```
 
-This opens the app in your browser at `http://localhost:8501`. Nothing is uploaded
-anywhere except the translation API calls described above.
+Use the **Test connection** button in the sidebar to confirm the backend is
+reachable before uploading a large file.
+
+## Upload size
+
+`.streamlit/config.toml` sets `server.maxUploadSize = 20000` (20GB), up from
+Streamlit's 200MB default. The upload to your backend is streamed from disk
+(via `requests-toolbelt`), so the frontend's memory use doesn't grow with file
+size. See the "Known limitation" note at the bottom of `BACKEND_API_CONTRACT.md`
+for the one remaining ceiling and how to remove it if you ever need to.
 
 ## What you can configure in the UI
 
 - **Video file** — mp4, mov, mkv, avi, webm, m4v
-- **Whisper model size** — tiny/base/small/medium/large (bigger = more accurate, slower)
-- **Source language** — auto-detect, or force a specific language if Whisper guesses wrong
+- **Backend URL**
+- **Whisper model size** — tiny/base/small/medium/large (sent to the backend)
+- **Source language** — auto-detect, or force a specific language
 - **Translate subtitles** — on/off, plus a target language
-- **Output filename**, and an optional `.vtt` export alongside the `.srt`
-
-The first run for a given model size will download that Whisper model (a few hundred MB
-to ~3 GB depending on size); it's cached by Whisper afterwards.
+- **Output filename** (defaults to the video's own name), optional `.vtt` export

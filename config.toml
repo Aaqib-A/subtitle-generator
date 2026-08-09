@@ -7,3 +7,6 @@ font = "sans serif"
 
 [server]
 headless = true
+# Max size (MB) for a single file_uploader upload. Streamlit's default is 200.
+# Set high enough to effectively remove the cap for large video files.
+maxUploadSize = 20000

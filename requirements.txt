@@ -48,3 +48,4 @@ typing-extensions==4.14.0
 urllib3==2.4.0
 
 streamlit>=1.33
+requests-toolbelt==1.0.0
